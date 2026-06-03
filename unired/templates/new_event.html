@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Новое событие — UniRed{% endblock %}
+{% block content %}
+<div class="form-page">
+  <div class="form-card">
+    <div class="form-title">Добавить событие</div>
+    <div class="form-sub">Только для модераторов и администраторов</div>
+    <form method="post">
+      <div class="form-group">
+        <label>Название события *</label>
+        <input type="text" name="title" required placeholder="Хакатон по ИИ 2026">
+      </div>
+      <div class="form-group">
+        <label>Описание *</label>
+        <textarea name="description" required placeholder="Подробности о событии..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Место проведения</label>
+        <input type="text" name="location" placeholder="Корпус ИТ, лаб. 3">
+      </div>
+      <div class="form-group">
+        <label>Дата и время *</label>
+        <input type="datetime-local" name="event_date" required>
+      </div>
+      <div class="form-footer">
+        <a href="/events" class="btn btn-outline">Отмена</a>
+        <button type="submit" class="btn btn-primary">Создать событие</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

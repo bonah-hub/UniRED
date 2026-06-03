@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — UniRed{% endblock %}
+{% block content %}
+<div class="form-page">
+  <div class="form-card">
+    <div class="form-title">Регистрация</div>
+    <div class="form-sub">Присоединяйтесь к сообществу университета</div>
+    {% if error %}<div class="form-error">{{ error }}</div>{% endif %}
+    <form method="post">
+      <div class="form-group">
+        <label>Имя пользователя *</label>
+        <input type="text" name="username" required placeholder="arman_dev" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" name="email" required placeholder="your@uni.kz" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Пароль *</label>
+        <input type="password" name="password" required placeholder="Минимум 6 символов" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label>Факультет</label>
+        <select name="faculty">
+          <option value="">Выберите факультет</option>
+          <option>ИТ и Computer Science</option>
+          <option>Экономика и менеджмент</option>
+          <option>Естественные науки</option>
+          <option>Гуманитарные науки</option>
+          <option>Юридический</option>
+          <option>Медицинский</option>
+        </select>
+      </div>
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Зарегистрироваться</button>
+      </div>
+    </form>
+    <p class="form-link">Уже есть аккаунт? <a href="/login">Войти</a></p>
+  </div>
+</div>
+{% endblock %}
