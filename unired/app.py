@@ -3,7 +3,7 @@ import sqlite3, os, hashlib
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'unired-secret-2026'
+app.secret_key = os.environ.get('SECRET_KEY', 'unired-secret-2026')
 DB = 'database.db'
 
 def get_db():
@@ -60,7 +60,6 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
     ''')
-    # Demo data
     try:
         pw = hashlib.sha256('admin123'.encode()).hexdigest()
         c.execute("INSERT INTO users (username, email, password, role) VALUES ('admin', 'admin@uni.kz', ?, 'admin')", (pw,))
@@ -102,8 +101,6 @@ def time_ago(dt_str):
 
 app.jinja_env.globals['time_ago'] = time_ago
 
-# ── Routes ──────────────────────────────────────────────────
-
 @app.route('/')
 def index():
     conn = get_db()
@@ -122,8 +119,7 @@ def index():
     events = conn.execute("SELECT * FROM events ORDER BY event_date ASC LIMIT 4").fetchall()
     conn.close()
     user = current_user()
-    return render_template('index.html', posts=posts, events=events, user=user,
-                           tag=tag, sort=sort, q=q)
+    return render_template('index.html', posts=posts, events=events, user=user, tag=tag, sort=sort, q=q)
 
 @app.route('/post/<int:post_id>')
 def post_detail(post_id):
@@ -245,7 +241,8 @@ def logout():
     return redirect(url_for('index'))
 
 
-init_db()
+with app.app_context():
+    init_db()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
