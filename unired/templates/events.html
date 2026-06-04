@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Ивенты — UniRed{% endblock %}
 {% block content %}
-<div style="max-width:1000px;margin:0 auto;padding:24px 20px">
+<div style="max-width:1060px;margin:0 auto;padding:26px 20px">
   <div class="page-header">
     <h1>📅 События и ивенты</h1>
     {% if user and user.role in ['admin','moderator'] %}
-    <a href="/events/new" class="btn btn-primary">+ Добавить событие</a>
+    <a href="/events/new" class="btn btn-teal">+ Добавить событие</a>
     {% endif %}
   </div>
   {% if events %}
@@ -22,7 +22,7 @@
   </div>
   {% else %}
   <div class="empty">
-    <p style="font-size:32px;margin-bottom:12px">📭</p>
+    <p style="font-size:36px;margin-bottom:12px">📭</p>
     <p>Пока нет запланированных событий</p>
   </div>
   {% endif %}

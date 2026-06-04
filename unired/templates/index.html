@@ -36,18 +36,18 @@
       <a href="/?sort=new{% if tag %}&tag={{tag}}{% endif %}" class="filter-pill {% if sort=='new' %}active{% endif %}">✨ Новое</a>
       <a href="/?sort=top{% if tag %}&tag={{tag}}{% endif %}" class="filter-pill {% if sort=='top' %}active{% endif %}">⬆ Топ</a>
       {% if user %}
-        <a href="/post/new" class="btn btn-primary btn-sm" style="margin-left:auto">+ Создать пост</a>
+        <a href="/post/new" class="btn btn-teal btn-sm" style="margin-left:auto">+ Создать пост</a>
       {% endif %}
     </div>
 
     {% if q %}
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Результаты по запросу: <strong>«{{ q }}»</strong></p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Результаты по запросу: <strong>«{{ q }}»</strong></p>
     {% endif %}
 
     {% for post in posts %}
     <div class="post-card" id="post-{{ post.id }}">
       <div class="vote-col">
-        <button class="vote-btn {% if user %}upvoteable{% endif %}" data-id="{{ post.id }}" onclick="vote({{ post.id }}, this)" title="Голосовать">▲</button>
+        <button class="vote-btn" data-id="{{ post.id }}" onclick="vote({{ post.id }}, this)" title="Голосовать">▲</button>
         <span class="vote-count" id="votes-{{ post.id }}">{{ post.votes }}</span>
       </div>
       <div class="post-body-wrap">
@@ -74,9 +74,9 @@
     </div>
     {% else %}
     <div class="empty">
-      <p style="font-size:32px;margin-bottom:12px;">📭</p>
+      <p style="font-size:36px;margin-bottom:12px">📭</p>
       <p>Постов пока нет</p>
-      {% if user %}<a href="/post/new" class="btn btn-primary" style="margin-top:14px">Создать первый пост</a>{% endif %}
+      {% if user %}<a href="/post/new" class="btn btn-teal" style="margin-top:14px">Создать первый пост</a>{% endif %}
     </div>
     {% endfor %}
   </div>
@@ -99,7 +99,7 @@
     {% if not user %}
     <div class="sidebar-card">
       <div class="sidebar-card-title">Присоединиться</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Войдите чтобы писать посты, комментарии и голосовать</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">Войдите чтобы писать посты, комментарии и голосовать</p>
       <a href="/register" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px">Регистрация</a>
       <a href="/login" class="btn btn-outline" style="width:100%;justify-content:center">Войти</a>
     </div>
@@ -110,7 +110,7 @@
 
 <script>
 function vote(postId, btn) {
-  fetch('/vote/' + postId, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+  fetch('/vote/' + postId, { method: 'POST' })
     .then(r => r.json())
     .then(data => {
       if (data.error) { window.location = '/login'; return; }
