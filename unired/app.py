@@ -12,7 +12,7 @@ import sqlite3, os, hashlib
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "unired-secret-2026"
+app.secret_key = os.environ.get("SECRET_KEY", "unired-secret-2026")
 DB = "database.db"
 
 
@@ -71,7 +71,6 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
     """)
-    # Demo data
     try:
         pw = hashlib.sha256("admin123".encode()).hexdigest()
         c.execute(
@@ -140,8 +139,6 @@ def time_ago(dt_str):
 
 
 app.jinja_env.globals["time_ago"] = time_ago
-
-# ── Routes ──────────────────────────────────────────────────
 
 
 @app.route("/")
@@ -348,7 +345,8 @@ def logout():
     return redirect(url_for("index"))
 
 
-init_db()
+with app.app_context():
+    init_db()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
