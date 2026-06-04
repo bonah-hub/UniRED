@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Ивенты — UniRed{% endblock %}
+{% block content %}
+<div style="max-width:1060px;margin:0 auto;padding:26px 20px">
+  <div class="page-header">
+    <h1>📅 События и ивенты</h1>
+    {% if user and user.role in ['admin','moderator'] %}
+    <a href="/events/new" class="btn btn-teal">+ Добавить событие</a>
+    {% endif %}
+  </div>
+  {% if events %}
+  <div class="events-grid">
+    {% for e in events %}
+    <div class="event-card">
+      <div class="event-card-date">📅 {{ e.event_date[:16].replace('T',' ') }}</div>
+      <div class="event-card-title">{{ e.title }}</div>
+      <div class="event-card-desc">{{ e.description }}</div>
+      {% if e.location %}<div class="event-card-loc">📍 {{ e.location }}</div>{% endif %}
+      <div style="font-size:11px;color:var(--hint);margin-top:8px">Организатор: u/{{ e.username }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <p style="font-size:36px;margin-bottom:12px">📭</p>
+    <p>Пока нет запланированных событий</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}UniRed — Лента{% endblock %}
+{% block content %}
+<div class="layout">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar-left">
+    <div class="sidebar">
+      <a href="/" class="nav-item {% if not tag %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Главная
+      </a>
+      <a href="/?tag=news" class="nav-item {% if tag=='news' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v2"/><path d="M2 8h6M2 12h6M2 16h6"/></svg>
+        Новости
+      </a>
+      <a href="/events" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Ивенты
+      </a>
+      <a href="/?tag=discuss" class="nav-item {% if tag=='discuss' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Обсуждения
+      </a>
+      <a href="/?tag=help" class="nav-item {% if tag=='help' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" stroke-linecap="round"/></svg>
+        Вопросы
+      </a>
+    </div>
+  </div>
+
+  <!-- MAIN FEED -->
+  <div>
+    <div class="feed-topbar">
+      <a href="/?sort=hot{% if tag %}&tag={{tag}}{% endif %}" class="filter-pill {% if sort=='hot' %}active{% endif %}">🔥 Горячее</a>
+      <a href="/?sort=new{% if tag %}&tag={{tag}}{% endif %}" class="filter-pill {% if sort=='new' %}active{% endif %}">✨ Новое</a>
+      <a href="/?sort=top{% if tag %}&tag={{tag}}{% endif %}" class="filter-pill {% if sort=='top' %}active{% endif %}">⬆ Топ</a>
+      {% if user %}
+        <a href="/post/new" class="btn btn-teal btn-sm" style="margin-left:auto">+ Создать пост</a>
+      {% endif %}
+    </div>
+
+    {% if q %}
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Результаты по запросу: <strong>«{{ q }}»</strong></p>
+    {% endif %}
+
+    {% for post in posts %}
+    <div class="post-card" id="post-{{ post.id }}">
+      <div class="vote-col">
+        <button class="vote-btn" data-id="{{ post.id }}" onclick="vote({{ post.id }}, this)" title="Голосовать">▲</button>
+        <span class="vote-count" id="votes-{{ post.id }}">{{ post.votes }}</span>
+      </div>
+      <div class="post-body-wrap">
+        <div class="post-meta">
+          {% if post.pinned %}<span class="pinned-mark">📌 Закреплено</span>{% endif %}
+          <span class="tag-badge tag-{{ post.tag }}">
+            {% if post.tag=='news' %}Новости
+            {% elif post.tag=='event' %}Ивент
+            {% elif post.tag=='discuss' %}Обсуждение
+            {% elif post.tag=='help' %}Вопрос
+            {% elif post.tag=='admin' %}Объявление
+            {% else %}{{ post.tag }}{% endif %}
+          </span>
+          <span class="post-author">u/{{ post.username }}{% if post.faculty %} · {{ post.faculty }}{% endif %}</span>
+          <span class="post-time">{{ time_ago(post.created_at) }}</span>
+        </div>
+        <div class="post-title"><a href="/post/{{ post.id }}">{{ post.title }}</a></div>
+        <div class="post-excerpt">{{ post.body }}</div>
+        <div class="post-actions">
+          <a href="/post/{{ post.id }}" class="action-link">💬 Комментарии</a>
+          <span class="action-link" style="cursor:default">🔗 Поделиться</span>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p style="font-size:36px;margin-bottom:12px">📭</p>
+      <p>Постов пока нет</p>
+      {% if user %}<a href="/post/new" class="btn btn-teal" style="margin-top:14px">Создать первый пост</a>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar-right">
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">📅 Ближайшие события</div>
+      {% for e in events %}
+      <div class="event-item">
+        <div class="event-date">{{ e.event_date[:10] }}</div>
+        <div class="event-title"><a href="/events">{{ e.title }}</a></div>
+        {% if e.location %}<div class="event-loc">📍 {{ e.location }}</div>{% endif %}
+      </div>
+      {% else %}
+      <p style="font-size:12px;color:var(--hint)">Нет предстоящих событий</p>
+      {% endfor %}
+    </div>
+
+    {% if not user %}
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">Присоединиться</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">Войдите чтобы писать посты, комментарии и голосовать</p>
+      <a href="/register" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px">Регистрация</a>
+      <a href="/login" class="btn btn-outline" style="width:100%;justify-content:center">Войти</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+function vote(postId, btn) {
+  fetch('/vote/' + postId, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { window.location = '/login'; return; }
+      document.getElementById('votes-' + postId).textContent = data.votes;
+      btn.classList.toggle('active', data.voted);
+    });
+}
+</script>
+{% endblock %}
