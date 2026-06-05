@@ -1,10 +1,28 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
-import sqlite3, os, hashlib, re
+import sqlite3, os, hashlib, re, uuid
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'unired-secret-2026'
 DB = 'database.db'
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'avi', 'pdf', 'doc', 'docx'}
+MAX_FILES = 3
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_file_type(filename):
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext in {'png', 'jpg', 'jpeg', 'gif', 'webp'}: return 'image'
+    if ext in {'mp4', 'mov', 'avi'}: return 'video'
+    return 'file'
 
 def get_db():
     conn = sqlite3.connect(DB)
@@ -21,6 +39,7 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             faculty TEXT DEFAULT '',
+            bio TEXT DEFAULT '',
             role TEXT DEFAULT 'student',
             created_at TEXT DEFAULT (datetime('now'))
         );
@@ -48,6 +67,31 @@ def init_db():
             user_id INTEGER,
             post_id INTEGER,
             PRIMARY KEY (user_id, post_id)
+        );
+        CREATE TABLE IF NOT EXISTS attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            original_name TEXT NOT NULL,
+            file_type TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (post_id) REFERENCES posts(id)
+        );
+        CREATE TABLE IF NOT EXISTS bookmarks (
+            user_id INTEGER NOT NULL,
+            post_id INTEGER NOT NULL,
+            created_at TEXT DEFAULT (datetime('now')),
+            PRIMARY KEY (user_id, post_id)
+        );
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            body TEXT NOT NULL,
+            is_read INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (sender_id) REFERENCES users(id),
+            FOREIGN KEY (receiver_id) REFERENCES users(id)
         );
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,9 +180,10 @@ def post_detail(post_id):
     post = conn.execute('SELECT p.*, u.username, u.faculty FROM posts p JOIN users u ON p.user_id=u.id WHERE p.id=?', (post_id,)).fetchone()
     if not post: conn.close(); return redirect(url_for('index'))
     comments = conn.execute('SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id=u.id WHERE c.post_id=? ORDER BY c.created_at ASC', (post_id,)).fetchall()
+    attachments = conn.execute('SELECT * FROM attachments WHERE post_id=?', (post_id,)).fetchall()
     conn.close()
     user = current_user()
-    return render_template('post.html', post=post, comments=comments, user=user)
+    return render_template('post.html', post=post, comments=comments, attachments=attachments, user=user)
 
 @app.route('/post/new', methods=['GET','POST'])
 def new_post():
@@ -150,7 +195,19 @@ def new_post():
         tag = request.form.get('tag', 'discuss')
         if title and body:
             conn = get_db()
-            conn.execute('INSERT INTO posts (user_id, title, body, tag) VALUES (?,?,?,?)', (user['id'], title, body, tag))
+            cursor = conn.execute('INSERT INTO posts (user_id, title, body, tag) VALUES (?,?,?,?)', (user['id'], title, body, tag))
+            post_id = cursor.lastrowid
+            # Обработка файлов
+            files = request.files.getlist('attachments')
+            count = 0
+            for f in files:
+                if f and f.filename and allowed_file(f.filename) and count < MAX_FILES:
+                    ext = f.filename.rsplit('.', 1)[1].lower()
+                    unique_name = f"{uuid.uuid4().hex}.{ext}"
+                    f.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_name))
+                    conn.execute('INSERT INTO attachments (post_id, filename, original_name, file_type) VALUES (?,?,?,?)',
+                        (post_id, unique_name, secure_filename(f.filename), get_file_type(f.filename)))
+                    count += 1
             conn.commit()
             conn.close()
             return redirect(url_for('index'))
@@ -248,12 +305,185 @@ def login():
         return render_template('login.html', error='Неверный email или пароль')
     return render_template('login.html')
 
+# ── ЗАКЛАДКИ ────────────────────────────────────────────────
+@app.route('/bookmark/<int:post_id>', methods=['POST'])
+def bookmark(post_id):
+    user = current_user()
+    if not user: return jsonify({'error': 'not logged in'}), 401
+    conn = get_db()
+    existing = conn.execute('SELECT 1 FROM bookmarks WHERE user_id=? AND post_id=?', (user['id'], post_id)).fetchone()
+    if existing:
+        conn.execute('DELETE FROM bookmarks WHERE user_id=? AND post_id=?', (user['id'], post_id))
+        saved = False
+    else:
+        conn.execute('INSERT INTO bookmarks (user_id, post_id) VALUES (?,?)', (user['id'], post_id))
+        saved = True
+    conn.commit(); conn.close()
+    return jsonify({'saved': saved})
+
+@app.route('/bookmarks')
+def bookmarks():
+    user = current_user()
+    if not user: return redirect(url_for('login'))
+    conn = get_db()
+    posts = conn.execute('''SELECT p.*, u.username, u.faculty FROM posts p
+        JOIN users u ON p.user_id=u.id
+        JOIN bookmarks b ON b.post_id=p.id
+        WHERE b.user_id=? ORDER BY b.created_at DESC''', (user['id'],)).fetchall()
+    conn.close()
+    return render_template('bookmarks.html', user=user, posts=posts)
+
+# ── ПОИСК ────────────────────────────────────────────────────
+@app.route('/search')
+def search():
+    user = current_user()
+    q = request.args.get('q', '').strip()
+    tag = request.args.get('tag', '')
+    sort = request.args.get('sort', 'hot')
+    faculty = request.args.get('faculty', '')
+    conn = get_db()
+    sql = '''SELECT p.*, u.username, u.faculty FROM posts p JOIN users u ON p.user_id=u.id WHERE 1=1'''
+    params = []
+    if q: sql += ' AND (p.title LIKE ? OR p.body LIKE ?)'; params += [f'%{q}%', f'%{q}%']
+    if tag: sql += ' AND p.tag=?'; params.append(tag)
+    if faculty: sql += ' AND u.faculty=?'; params.append(faculty)
+    if sort == 'new': sql += ' ORDER BY p.created_at DESC'
+    elif sort == 'top': sql += ' ORDER BY p.votes DESC'
+    else: sql += ' ORDER BY p.votes DESC, p.created_at DESC'
+    posts = conn.execute(sql, params).fetchall()
+    faculties = conn.execute('SELECT DISTINCT faculty FROM users WHERE faculty != "" ORDER BY faculty').fetchall()
+    conn.close()
+    return render_template('search.html', user=user, posts=posts, q=q, tag=tag, sort=sort, faculty=faculty, faculties=faculties)
+
+# ── СООБЩЕНИЯ ────────────────────────────────────────────────
+@app.route('/messages')
+def messages():
+    user = current_user()
+    if not user: return redirect(url_for('login'))
+    conn = get_db()
+    # Список диалогов
+    dialogs = conn.execute('''
+        SELECT u.id, u.username,
+            (SELECT body FROM messages WHERE (sender_id=u.id AND receiver_id=?) OR (sender_id=? AND receiver_id=u.id) ORDER BY created_at DESC LIMIT 1) as last_msg,
+            (SELECT created_at FROM messages WHERE (sender_id=u.id AND receiver_id=?) OR (sender_id=? AND receiver_id=u.id) ORDER BY created_at DESC LIMIT 1) as last_time,
+            (SELECT COUNT(*) FROM messages WHERE sender_id=u.id AND receiver_id=? AND is_read=0) as unread
+        FROM users u
+        WHERE u.id IN (
+            SELECT CASE WHEN sender_id=? THEN receiver_id ELSE sender_id END
+            FROM messages WHERE sender_id=? OR receiver_id=?
+        ) ORDER BY last_time DESC
+    ''', (user['id'], user['id'], user['id'], user['id'], user['id'], user['id'], user['id'], user['id'])).fetchall()
+    unread_total = conn.execute('SELECT COUNT(*) FROM messages WHERE receiver_id=? AND is_read=0', (user['id'],)).fetchone()[0]
+    conn.close()
+    return render_template('messages.html', user=user, dialogs=dialogs, unread_total=unread_total)
+
+@app.route('/messages/<int:other_id>', methods=['GET','POST'])
+def chat(other_id):
+    user = current_user()
+    if not user: return redirect(url_for('login'))
+    conn = get_db()
+    other = conn.execute('SELECT * FROM users WHERE id=?', (other_id,)).fetchone()
+    if not other: conn.close(); return redirect(url_for('messages'))
+    if request.method == 'POST':
+        body = request.form.get('body','').strip()
+        if body:
+            conn.execute('INSERT INTO messages (sender_id, receiver_id, body) VALUES (?,?,?)', (user['id'], other_id, body))
+            conn.commit()
+    # Пометить как прочитанные
+    conn.execute('UPDATE messages SET is_read=1 WHERE sender_id=? AND receiver_id=?', (other_id, user['id']))
+    conn.commit()
+    msgs = conn.execute('''SELECT m.*, u.username FROM messages m JOIN users u ON m.sender_id=u.id
+        WHERE (m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?)
+        ORDER BY m.created_at ASC''', (user['id'], other_id, other_id, user['id'])).fetchall()
+    conn.close()
+    return render_template('chat.html', user=user, other=other, msgs=msgs)
+
+@app.route('/messages/new')
+def new_message():
+    user = current_user()
+    if not user: return redirect(url_for('login'))
+    conn = get_db()
+    users = conn.execute('SELECT id, username, faculty FROM users WHERE id!=? ORDER BY username', (user['id'],)).fetchall()
+    conn.close()
+    return render_template('new_message.html', user=user, users=users)
+
+@app.route('/profile')
+def profile():
+    user = current_user()
+    if not user: return redirect(url_for('login'))
+    conn = get_db()
+    posts = conn.execute('SELECT * FROM posts WHERE user_id=? ORDER BY created_at DESC', (user['id'],)).fetchall()
+    comments_count = conn.execute('SELECT COUNT(*) FROM comments WHERE user_id=?', (user['id'],)).fetchone()[0]
+    votes_given = conn.execute('SELECT COUNT(*) FROM votes WHERE user_id=?', (user['id'],)).fetchone()[0]
+    total_votes = conn.execute('SELECT COALESCE(SUM(votes),0) FROM posts WHERE user_id=?', (user['id'],)).fetchone()[0]
+    conn.close()
+    return render_template('profile.html', user=user, posts=posts,
+                           comments_count=comments_count, votes_given=votes_given, total_votes=total_votes)
+
+@app.route('/profile/edit', methods=['GET','POST'])
+def profile_edit():
+    user = current_user()
+    if not user: return redirect(url_for('login'))
+    error = None
+    success = None
+    if request.method == 'POST':
+        username = request.form.get('username','').strip()
+        faculty = request.form.get('faculty','').strip()
+        bio = request.form.get('bio','').strip()
+        new_password = request.form.get('new_password','').strip()
+        current_password = request.form.get('current_password','').strip()
+        conn = get_db()
+        real = conn.execute('SELECT password FROM users WHERE id=?', (user['id'],)).fetchone()
+        if real['password'] != hash_pw(current_password):
+            error = 'Неверный текущий пароль'
+            conn.close()
+        else:
+            existing = conn.execute('SELECT id FROM users WHERE username=? AND id!=?', (username, user['id'])).fetchone()
+            if existing:
+                error = 'Это имя пользователя уже занято'
+                conn.close()
+            else:
+                if new_password:
+                    conn.execute('UPDATE users SET username=?, faculty=?, bio=?, password=? WHERE id=?',
+                                 (username, faculty, bio, hash_pw(new_password), user['id']))
+                else:
+                    conn.execute('UPDATE users SET username=?, faculty=?, bio=? WHERE id=?',
+                                 (username, faculty, bio, user['id']))
+                conn.commit()
+                conn.close()
+                success = 'Профиль обновлён!'
+    user = current_user()
+    return render_template('profile_edit.html', user=user, error=error, success=success)
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
 
 
+def migrate_db():
+    conn = get_db()
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''")
+    except: pass
+    conn.execute('''CREATE TABLE IF NOT EXISTS bookmarks (
+        user_id INTEGER NOT NULL, post_id INTEGER NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')),
+        PRIMARY KEY (user_id, post_id))''')
+    conn.execute('''CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id INTEGER NOT NULL, receiver_id INTEGER NOT NULL,
+        body TEXT NOT NULL, is_read INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')))''')
+    conn.execute('''CREATE TABLE IF NOT EXISTS attachments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        post_id INTEGER NOT NULL, filename TEXT NOT NULL,
+        original_name TEXT NOT NULL, file_type TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')))''')
+    conn.commit()
+    conn.close()
+
+migrate_db()
 init_db()
 
 if __name__ == '__main__':

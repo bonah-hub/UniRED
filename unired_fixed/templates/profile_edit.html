@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Редактировать профиль — UniRed{% endblock %}
+{% block content %}
+<div class="form-page" style="max-width:620px">
+  <div class="form-card">
+
+    <!-- Шапка -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
+      <div class="profile-avatar-sm">{{ user.username[0].upper() }}</div>
+      <div>
+        <div class="form-title" style="margin-bottom:2px">Редактировать профиль</div>
+        <div class="form-sub" style="margin:0">Обновите информацию о себе</div>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="form-error">⚠️ {{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="form-success">✅ {{ success }}</div>
+    {% endif %}
+
+    <form method="post">
+
+      <div class="edit-section-title">Основная информация</div>
+
+      <div class="form-group">
+        <label>Имя пользователя</label>
+        <input type="text" name="username" value="{{ user.username }}" required maxlength="40" placeholder="Ваш никнейм">
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" value="{{ user.email }}" disabled style="opacity:0.5;cursor:not-allowed" title="Email нельзя изменить">
+        <small style="color:var(--hint);font-size:12px;margin-top:4px;display:block">Email изменить нельзя</small>
+      </div>
+
+      <div class="form-group">
+        <label>Факультет / Специальность</label>
+        <select name="faculty">
+          <option value="">— Не указано —</option>
+          {% for fac in ['ИТ и CS','Кибербезопасность','Инженерия','Бизнес и менеджмент','Дизайн','Математика','Другое'] %}
+          <option value="{{ fac }}" {% if user.faculty == fac %}selected{% endif %}>{{ fac }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>О себе</label>
+        <textarea name="bio" placeholder="Расскажите немного о себе..." maxlength="300">{{ user.bio or '' }}</textarea>
+        <small style="color:var(--hint);font-size:12px;margin-top:4px;display:block">Максимум 300 символов</small>
+      </div>
+
+      <div class="edit-section-title" style="margin-top:24px">Смена пароля</div>
+
+      <div class="form-group">
+        <label>Текущий пароль *</label>
+        <div class="pw-wrap">
+          <input type="password" name="current_password" id="cur_pw" required placeholder="Введите текущий пароль">
+          <button type="button" class="pw-eye" onclick="togglePw('cur_pw',this)">👁</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Новый пароль <span style="color:var(--hint);font-weight:400">(оставьте пустым если не меняете)</span></label>
+        <div class="pw-wrap">
+          <input type="password" name="new_password" id="new_pw" placeholder="Новый пароль (минимум 6 символов)" minlength="6">
+          <button type="button" class="pw-eye" onclick="togglePw('new_pw',this)">👁</button>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <a href="/profile" class="btn btn-outline">Отмена</a>
+        <button type="submit" class="btn btn-teal">💾 Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.profile-avatar-sm {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--accent));
+  color: #fff; font-family: 'Rajdhani', sans-serif;
+  font-size: 24px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.edit-section-title {
+  font-size: 11px; font-weight: 700; color: var(--hint);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 14px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 40px; }
+.pw-eye {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px;
+  color: var(--hint); transition: color 0.15s;
+}
+.pw-eye:hover { color: var(--teal); }
+.form-success {
+  background: var(--green-light); color: var(--green);
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; margin-bottom: 16px;
+  border: 1px solid rgba(29,158,117,0.25);
+}
+</style>
+
+<script>
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+</script>
+{% endblock %}

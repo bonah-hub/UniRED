@@ -22,6 +22,26 @@
       </div>
       <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;margin-bottom:12px;line-height:1.3">{{ post.title }}</div>
       <div style="font-size:14px;line-height:1.75;color:var(--text);white-space:pre-line">{{ post.body }}</div>
+
+      {% if attachments %}
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px">
+        {% for att in attachments %}
+          {% if att.file_type == 'image' %}
+            <a href="/static/uploads/{{ att.filename }}" target="_blank">
+              <img src="/static/uploads/{{ att.filename }}" style="max-width:320px;max-height:240px;border-radius:8px;object-fit:cover;border:1px solid var(--border)">
+            </a>
+          {% elif att.file_type == 'video' %}
+            <video controls style="max-width:480px;border-radius:8px;border:1px solid var(--border)">
+              <source src="/static/uploads/{{ att.filename }}">
+            </video>
+          {% else %}
+            <a href="/static/uploads/{{ att.filename }}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);text-decoration:none">
+              📄 {{ att.original_name }}
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
   </div>
 

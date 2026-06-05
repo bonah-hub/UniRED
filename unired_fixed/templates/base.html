@@ -34,6 +34,44 @@
     --shadow: 0 2px 16px rgba(0,0,0,0.07);
     --shadow-md: 0 4px 24px rgba(0,0,0,0.1);
   }
+  [data-theme="dark"] {
+    --bg: #12151a;
+    --surface: rgba(30,34,42,0.92);
+    --surface-solid: #1e222a;
+    --border: rgba(255,255,255,0.08);
+    --border-dark: rgba(255,255,255,0.06);
+    --text: #e8eaf0;
+    --muted: #8b95a5;
+    --hint: #555f6e;
+    --accent: #ff3348;
+    --accent-light: #2d1519;
+    --teal: #00c8c8;
+    --teal-dark: #00a0a0;
+    --teal-light: #0d2626;
+    --blue: #4a9eff;
+    --blue-light: #0d1e33;
+    --green: #2dd4a0;
+    --green-light: #0d2620;
+    --purple: #8b7cf8;
+    --purple-light: #1a1730;
+    --amber: #f0a030;
+    --amber-light: #281d08;
+    --shadow: 0 2px 16px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  [data-theme="dark"] body::before {
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='900'%3E%3Cpolygon points='0,0 350,200 0,400' fill='%231a1e26'/%3E%3Cpolygon points='350,200 700,0 700,400' fill='%23161a22'/%3E%3Cpolygon points='0,400 350,200 350,600' fill='%231c2028'/%3E%3Cpolygon points='350,200 700,400 350,600' fill='%23141820'/%3E%3Cpolygon points='700,0 1050,200 700,400' fill='%23181c24'/%3E%3Cpolygon points='1050,200 1400,0 1400,400' fill='%231e2230'/%3E%3Cpolygon points='700,400 1050,200 1050,600' fill='%23161a22'/%3E%3Cpolygon points='1050,200 1400,400 1050,600' fill='%231a1e28'/%3E%3Cpolygon points='0,400 350,600 0,800' fill='%23181c24'/%3E%3Cpolygon points='350,600 700,400 700,800' fill='%23141820'/%3E%3Cpolygon points='0,800 350,600 350,900' fill='%231c2028'/%3E%3Cpolygon points='700,400 1050,600 700,800' fill='%23161a22'/%3E%3Cpolygon points='1050,600 1400,400 1400,800' fill='%231a1e26'/%3E%3Cpolygon points='700,800 1050,600 1050,900' fill='%23181c24'/%3E%3Cpolygon points='1050,600 1400,800 1400,900' fill='%231e2230'/%3E%3C/svg%3E")
+      center/cover fixed;
+  }
+  [data-theme="dark"] nav {
+    background: rgba(20,24,32,0.85);
+  }
+  [data-theme="dark"] .nav-search input {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.1);
+    color: var(--text);
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Nunito', sans-serif;
@@ -276,7 +314,13 @@
   .comment-form textarea { min-height: 75px; margin-bottom: 10px; }
   .comments-title { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; margin: 20px 0 12px; letter-spacing: 0.03em; }
 
-  /* ── EVENTS PAGE ── */
+  .theme-toggle {
+    background: rgba(255,255,255,0.55); border: 1px solid rgba(0,0,0,0.09);
+    border-radius: 50%; width: 32px; height: 32px; cursor: pointer;
+    font-size: 15px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; backdrop-filter: blur(4px); flex-shrink: 0;
+  }
+  .theme-toggle:hover { transform: rotate(20deg); background: white; }
   .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
   .event-card {
     background: var(--surface); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
@@ -307,20 +351,43 @@
       <a href="/events" class="btn btn-outline btn-sm">📅 Ивенты</a>
       {% if user %}
         <a href="/post/new" class="btn btn-teal btn-sm">+ Пост</a>
-        <div class="user-badge">
+        <a href="/messages" class="btn btn-outline btn-sm" style="position:relative">
+          💬
+          <span id="unread-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700"></span>
+        </a>
+        <a href="/profile" class="user-badge" style="text-decoration:none">
           <div class="avatar">{{ user.username[0].upper() }}</div>
           <span>{{ user.username }}</span>
-        </div>
+        </a>
         <a href="/logout" class="btn btn-outline btn-sm">Выйти</a>
       {% else %}
         <a href="/login" class="btn btn-outline btn-sm">Войти</a>
         <a href="/register" class="btn btn-primary btn-sm">Регистрация</a>
       {% endif %}
+      <button class="theme-toggle" onclick="toggleTheme()" title="Тёмная тема">🌙</button>
     </div>
   </div>
 </nav>
 
 {% block content %}{% endblock %}
 
+<script>
+// Тёмная тема
+(function() {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.querySelector('.theme-toggle');
+    if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+  });
+})();
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  document.querySelector('.theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+</script>
 </body>
 </html>

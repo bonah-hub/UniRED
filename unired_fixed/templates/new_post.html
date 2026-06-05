@@ -5,7 +5,7 @@
   <div class="form-card">
     <div class="form-title">Создать пост</div>
     <div class="form-sub">Поделитесь информацией с сообществом университета</div>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       <div class="form-group">
         <label>Категория</label>
         <div class="tag-select">
@@ -31,6 +31,16 @@
         <label for="body">Текст *</label>
         <textarea id="body" name="body" placeholder="Подробнее о теме..." required></textarea>
       </div>
+      <div class="form-group">
+        <label>Прикрепить файлы (до 3)</label>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('attachments').click()">
+          <div class="upload-icon">📎</div>
+          <div class="upload-text">Нажмите или перетащите файлы сюда</div>
+          <div class="upload-hint">Фото, видео, PDF, Word — до 3 файлов, макс. 50MB</div>
+        </div>
+        <input type="file" id="attachments" name="attachments" multiple accept="image/*,video/*,.pdf,.doc,.docx" style="display:none" onchange="previewFiles(this)">
+        <div id="filePreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+      </div>
       <div class="form-footer">
         <a href="/" class="btn btn-outline">Отмена</a>
         <button type="submit" class="btn btn-teal">Опубликовать</button>
@@ -38,4 +48,92 @@
     </form>
   </div>
 </div>
+
+<style>
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.upload-area:hover { border-color: var(--teal); background: rgba(0,200,170,0.04); }
+.upload-icon { font-size: 28px; margin-bottom: 6px; }
+.upload-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.upload-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.preview-item {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  max-width: 200px;
+}
+.preview-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+.preview-remove { position: absolute; top: -6px; right: -6px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+</style>
+
+<script>
+let selectedFiles = [];
+
+function previewFiles(input) {
+  const files = Array.from(input.files);
+  const limited = files.slice(0, 3);
+  selectedFiles = limited;
+  renderPreview();
+}
+
+function renderPreview() {
+  const preview = document.getElementById('filePreview');
+  preview.innerHTML = '';
+  selectedFiles.forEach((file, i) => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    if (file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      item.appendChild(img);
+    } else {
+      const icon = document.createElement('span');
+      icon.style.fontSize = '24px';
+      icon.textContent = file.type.includes('pdf') ? '📄' : file.type.includes('video') ? '🎬' : '📎';
+      item.appendChild(icon);
+    }
+    const name = document.createElement('span');
+    name.textContent = file.name.length > 20 ? file.name.slice(0, 18) + '…' : file.name;
+    name.style.overflow = 'hidden';
+    item.appendChild(name);
+    const rm = document.createElement('button');
+    rm.className = 'preview-remove';
+    rm.textContent = '×';
+    rm.type = 'button';
+    rm.onclick = () => { selectedFiles.splice(i, 1); renderPreview(); updateInput(); };
+    item.appendChild(rm);
+    preview.appendChild(item);
+  });
+  updateInput();
+}
+
+function updateInput() {
+  const dt = new DataTransfer();
+  selectedFiles.forEach(f => dt.items.add(f));
+  document.getElementById('attachments').files = dt.files;
+}
+
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--teal)'; });
+uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.style.borderColor = 'var(--border)';
+  const files = Array.from(e.dataTransfer.files).slice(0, 3);
+  selectedFiles = files;
+  renderPreview();
+});
+</script>
 {% endblock %}

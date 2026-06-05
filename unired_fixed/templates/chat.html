@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Чат с {{ other.username }} — UniRed{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:28px auto;padding:0 20px">
+
+  <!-- Шапка чата -->
+  <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:16px 20px;box-shadow:var(--shadow)">
+    <a href="/messages" style="color:var(--muted);font-size:20px;line-height:1">←</a>
+    <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--accent));color:#fff;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ other.username[0].upper() }}</div>
+    <div>
+      <div style="font-weight:700;font-size:15px">{{ other.username }}</div>
+      {% if other.faculty %}<div style="font-size:12px;color:var(--muted)">{{ other.faculty }}</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- Сообщения -->
+  <div id="chat-box" style="background:var(--surface);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:20px;min-height:400px;max-height:500px;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+    {% if msgs %}
+      {% for m in msgs %}
+      <div style="display:flex;flex-direction:column;align-items:{% if m.sender_id == user.id %}flex-end{% else %}flex-start{% endif %}">
+        <div style="max-width:75%;padding:10px 14px;border-radius:{% if m.sender_id == user.id %}16px 16px 4px 16px{% else %}16px 16px 16px 4px{% endif %};background:{% if m.sender_id == user.id %}linear-gradient(135deg,var(--teal),var(--teal-dark)){% else %}var(--surface-solid){% endif %};color:{% if m.sender_id == user.id %}#fff{% else %}var(--text){% endif %};border:{% if m.sender_id != user.id %}1px solid var(--border-dark){% else %}none{% endif %};box-shadow:var(--shadow);font-size:14px;line-height:1.5;word-break:break-word">{{ m.body }}</div>
+        <div style="font-size:11px;color:var(--hint);margin-top:3px;padding:0 4px">{{ m.created_at[11:16] }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="text-align:center;color:var(--hint);margin:auto;font-size:13px">Начните диалог 👋</div>
+    {% endif %}
+  </div>
+
+  <!-- Форма ввода -->
+  <form method="post" style="display:flex;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:14px 16px;border-top:1px solid var(--border-dark)">
+    <input type="text" name="body" id="msg-input" placeholder="Напишите сообщение..." autocomplete="off" style="flex:1;border-radius:24px;padding:10px 18px" required>
+    <button type="submit" class="btn btn-teal" style="border-radius:24px;padding:10px 20px">➤</button>
+  </form>
+</div>
+
+<script>
+// Скролл вниз
+const box = document.getElementById('chat-box');
+box.scrollTop = box.scrollHeight;
+// Фокус на инпут
+document.getElementById('msg-input').focus();
+</script>
+{% endblock %}
