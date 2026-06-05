@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} — UniRed{% endblock %}
+{% block content %}
+<div style="max-width:1100px;margin:0 auto;padding:22px 20px;display:grid;grid-template-columns:1fr 260px;gap:20px;align-items:start">
+
+<div class="detail-wrap">
+  <a href="/" style="font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:4px;margin-bottom:16px;font-weight:600">← Назад</a>
+
+  <div class="post-card" style="margin-bottom:20px">
+    <div class="vote-col">
+      <button class="vote-btn" data-id="{{ post.id }}" onclick="vote({{ post.id }}, this)">▲</button>
+      <span class="vote-count" id="votes-{{ post.id }}">{{ post.votes }}</span>
+    </div>
+    <div class="post-body-wrap">
+      <div class="post-meta">
+        {% if post.pinned %}<span class="pinned-mark">📌 Закреплено</span>{% endif %}
+        <span class="tag-badge tag-{{ post.tag }}">
+          {% if post.tag=='news' %}Новости{% elif post.tag=='event' %}Ивент{% elif post.tag=='discuss' %}Обсуждение{% elif post.tag=='help' %}Вопрос{% elif post.tag=='admin' %}Объявление{% else %}{{ post.tag }}{% endif %}
+        </span>
+        <span class="post-author">u/{{ post.username }}</span>
+        <span class="post-time">{{ time_ago(post.created_at) }}</span>
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;margin-bottom:12px;line-height:1.3">{{ post.title }}</div>
+      <div style="font-size:14px;line-height:1.75;color:var(--text);white-space:pre-line">{{ post.body }}</div>
+
+      {% if attachments %}
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px">
+        {% for att in attachments %}
+          {% if att.file_type == 'image' %}
+            <a href="/static/uploads/{{ att.filename }}" target="_blank">
+              <img src="/static/uploads/{{ att.filename }}" style="max-width:320px;max-height:240px;border-radius:8px;object-fit:cover;border:1px solid var(--border)">
+            </a>
+          {% elif att.file_type == 'video' %}
+            <video controls style="max-width:480px;border-radius:8px;border:1px solid var(--border)">
+              <source src="/static/uploads/{{ att.filename }}">
+            </video>
+          {% else %}
+            <a href="/static/uploads/{{ att.filename }}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);text-decoration:none">
+              📄 {{ att.original_name }}
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="comments-title">💬 Комментарии ({{ comments|length }})</div>
+
+  {% if user %}
+  <div class="comment-form">
+    <form method="post" action="/comment/{{ post.id }}">
+      <textarea name="body" placeholder="Напишите комментарий..." required></textarea>
+      <div style="display:flex;justify-content:flex-end">
+        <button type="submit" class="btn btn-teal btn-sm">Отправить</button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div style="background:var(--surface);backdrop-filter:var(--glass);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;text-align:center;font-size:13px;color:var(--muted)">
+    <a href="/login" style="color:var(--teal);font-weight:700">Войдите</a> чтобы оставить комментарий
+  </div>
+  {% endif %}
+
+  {% for c in comments %}
+  <div class="comment-box">
+    <div class="comment-meta"><strong>u/{{ c.username }}</strong> · {{ time_ago(c.created_at) }}</div>
+    <div class="comment-body">{{ c.body }}</div>
+  </div>
+  {% else %}
+  <div class="empty" style="padding:30px 0">
+    <p style="color:var(--hint)">Комментариев пока нет. Будьте первым!</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div>
+  <div class="sidebar-card">
+    <div class="sidebar-card-title">Об авторе</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="avatar" style="width:38px;height:38px;font-size:16px">{{ post.username[0].upper() }}</div>
+      <div>
+        <div style="font-weight:700;font-size:14px">u/{{ post.username }}</div>
+        {% if post.faculty %}<div style="font-size:12px;color:var(--muted)">{{ post.faculty }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function vote(postId, btn) {
+  fetch('/vote/' + postId, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { window.location = '/login'; return; }
+      document.getElementById('votes-' + postId).textContent = data.votes;
+      btn.classList.toggle('active', data.voted);
+    });
+}
+</script>
+{% endblock %}

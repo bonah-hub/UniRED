@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Поиск — UniRed{% endblock %}
+{% block content %}
+<div style="max-width:860px;margin:28px auto;padding:0 20px">
+
+  <!-- Форма поиска -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;margin-bottom:20px;box-shadow:var(--shadow-md)">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;margin-bottom:16px">🔍 Умный поиск</div>
+    <form method="get" action="/search">
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <input type="text" name="q" value="{{ q }}" placeholder="Введите запрос..." style="flex:1;font-size:15px;padding:12px 16px">
+        <button type="submit" class="btn btn-teal" style="padding:12px 24px;font-size:14px">Найти</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <!-- Категория -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          {% for t, label in [('','Все'),('discuss','💬 Обсуждение'),('news','📰 Новости'),('help','🙋 Вопросы'),('event','🎉 Ивент')] %}
+          <a href="/search?q={{ q }}&tag={{ t }}&sort={{ sort }}&faculty={{ faculty }}"
+             class="filter-pill {% if tag == t %}active{% endif %}">{{ label }}</a>
+          {% endfor %}
+        </div>
+        <!-- Сортировка -->
+        <div style="display:flex;gap:6px;margin-left:auto">
+          <a href="/search?q={{ q }}&tag={{ tag }}&sort=hot&faculty={{ faculty }}" class="filter-pill {% if sort=='hot' %}active{% endif %}">🔥 Топ</a>
+          <a href="/search?q={{ q }}&tag={{ tag }}&sort=new&faculty={{ faculty }}" class="filter-pill {% if sort=='new' %}active{% endif %}">✨ Новое</a>
+        </div>
+      </div>
+      {% if faculties %}
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12px;color:var(--muted);font-weight:600">Факультет:</span>
+        <a href="/search?q={{ q }}&tag={{ tag }}&sort={{ sort }}&faculty=" class="filter-pill {% if not faculty %}active{% endif %}" style="font-size:11px;padding:4px 12px">Все</a>
+        {% for f in faculties %}
+        {% if f.faculty %}
+        <a href="/search?q={{ q }}&tag={{ tag }}&sort={{ sort }}&faculty={{ f.faculty }}"
+           class="filter-pill {% if faculty == f.faculty %}active{% endif %}" style="font-size:11px;padding:4px 12px">{{ f.faculty }}</a>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Результаты -->
+  {% if q or tag or faculty %}
+  <div style="font-size:13px;color:var(--muted);margin-bottom:14px;font-weight:600">
+    Найдено: <strong style="color:var(--text)">{{ posts|length }}</strong> постов
+    {% if q %} по запросу «<strong style="color:var(--teal)">{{ q }}</strong>»{% endif %}
+  </div>
+
+  {% if posts %}
+    {% for post in posts %}
+    <div class="post-card">
+      <div class="vote-col">
+        <span style="font-size:18px;color:var(--hint)">▲</span>
+        <span class="vote-count">{{ post.votes }}</span>
+      </div>
+      <div class="post-body-wrap">
+        <div class="post-meta">
+          <span class="tag-badge tag-{{ post.tag }}">
+            {% if post.tag=='news' %}Новости{% elif post.tag=='event' %}Ивент{% elif post.tag=='discuss' %}Обсуждение{% elif post.tag=='help' %}Вопрос{% elif post.tag=='admin' %}Объявление{% else %}{{ post.tag }}{% endif %}
+          </span>
+          <span class="post-author">u/{{ post.username }}{% if post.faculty %} · {{ post.faculty }}{% endif %}</span>
+          <span class="post-time">{{ time_ago(post.created_at) }}</span>
+        </div>
+        <div class="post-title"><a href="/post/{{ post.id }}">{{ post.title }}</a></div>
+        <div class="post-excerpt">{{ post.body }}</div>
+        <div class="post-actions">
+          <a href="/post/{{ post.id }}" class="action-link">💬 Комментарии</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="text-align:center;padding:60px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+      <div style="font-size:40px;margin-bottom:12px">🔍</div>
+      <div style="color:var(--muted)">Ничего не найдено. Попробуйте другой запрос.</div>
+    </div>
+  {% endif %}
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+    <div style="font-size:40px;margin-bottom:12px">🔎</div>
+    <div style="color:var(--muted)">Введите запрос или выберите фильтр</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

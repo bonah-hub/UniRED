@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Закладки — UniRed{% endblock %}
+{% block content %}
+<div style="max-width:800px;margin:28px auto;padding:0 20px">
+  <div class="page-header">
+    <h1>🔖 Сохранённые посты</h1>
+  </div>
+
+  {% if posts %}
+    {% for post in posts %}
+    <div class="post-card">
+      <div class="vote-col">
+        <span style="font-size:18px;color:var(--hint)">▲</span>
+        <span class="vote-count">{{ post.votes }}</span>
+      </div>
+      <div class="post-body-wrap">
+        <div class="post-meta">
+          <span class="tag-badge tag-{{ post.tag }}">
+            {% if post.tag=='news' %}Новости{% elif post.tag=='event' %}Ивент{% elif post.tag=='discuss' %}Обсуждение{% elif post.tag=='help' %}Вопрос{% elif post.tag=='admin' %}Объявление{% else %}{{ post.tag }}{% endif %}
+          </span>
+          <span class="post-author">u/{{ post.username }}</span>
+          <span class="post-time">{{ time_ago(post.created_at) }}</span>
+        </div>
+        <div class="post-title"><a href="/post/{{ post.id }}">{{ post.title }}</a></div>
+        <div class="post-excerpt">{{ post.body }}</div>
+        <div class="post-actions">
+          <a href="/post/{{ post.id }}" class="action-link">💬 Комментарии</a>
+          <button class="action-link" onclick="removeBookmark({{ post.id }}, this)" style="background:none;border:none;cursor:pointer;font-family:inherit;color:var(--teal)">🔖 Убрать из закладок</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="text-align:center;padding:70px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)">
+      <div style="font-size:44px;margin-bottom:12px">🔖</div>
+      <div style="font-size:16px;color:var(--muted);margin-bottom:16px">Вы ещё ничего не сохранили</div>
+      <a href="/" class="btn btn-teal">Перейти в ленту</a>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function removeBookmark(postId, btn) {
+  fetch('/bookmark/' + postId, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      btn.closest('.post-card').style.opacity = '0';
+      btn.closest('.post-card').style.transition = 'opacity 0.3s';
+      setTimeout(() => btn.closest('.post-card').remove(), 300);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Сообщения — UniRed{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:28px auto;padding:0 20px">
+  <div class="page-header">
+    <h1>💬 Сообщения</h1>
+    <a href="/messages/new" class="btn btn-teal">+ Новое</a>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);overflow:hidden">
+    {% if dialogs %}
+      {% for d in dialogs %}
+      <a href="/messages/{{ d.id }}" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border-dark);text-decoration:none;transition:background 0.15s;{% if d.unread %}background:rgba(0,180,180,0.04){% endif %}" onmouseover="this.style.background='rgba(0,180,180,0.07)'" onmouseout="this.style.background='{% if d.unread %}rgba(0,180,180,0.04){% else %}transparent{% endif %}'">
+        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--accent));color:#fff;font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
+          {{ d.username[0].upper() }}
+          {% if d.unread %}<span style="position:absolute;top:-2px;right:-2px;background:var(--accent);border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Nunito',sans-serif;font-weight:700;border:2px solid var(--surface)">{{ d.unread }}</span>{% endif %}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:{% if d.unread %}700{% else %}600{% endif %};font-size:14px;color:var(--text)">{{ d.username }}</div>
+          <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">{{ d.last_msg or '—' }}</div>
+        </div>
+        <div style="font-size:11px;color:var(--hint);white-space:nowrap">{{ d.last_time[:10] if d.last_time else '' }}</div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div style="text-align:center;padding:70px 20px">
+        <div style="font-size:44px;margin-bottom:12px">💬</div>
+        <div style="color:var(--muted);margin-bottom:16px">У вас ещё нет сообщений</div>
+        <a href="/messages/new" class="btn btn-teal">Написать первое сообщение</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

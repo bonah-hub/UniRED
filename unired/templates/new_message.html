@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Новое сообщение — UniRed{% endblock %}
+{% block content %}
+<div class="form-page" style="max-width:560px">
+  <div class="form-card">
+    <div class="form-title">💬 Новое сообщение</div>
+    <div class="form-sub">Выберите получателя</div>
+
+    <input type="text" id="search-user" placeholder="Поиск по имени..." oninput="filterUsers(this.value)" style="margin-bottom:16px">
+
+    <div id="user-list" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto">
+      {% for u in users %}
+      <a href="/messages/{{ u.id }}" class="user-row" data-name="{{ u.username.lower() }}">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--accent));color:#fff;font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ u.username[0].upper() }}</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text)">{{ u.username }}</div>
+          {% if u.faculty %}<div style="font-size:12px;color:var(--muted)">{{ u.faculty }}</div>{% endif %}
+        </div>
+      </a>
+      {% else %}
+      <p style="color:var(--muted);text-align:center;padding:20px">Нет других пользователей</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<style>
+.user-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface);
+  text-decoration: none; transition: all 0.15s;
+}
+.user-row:hover { border-color: var(--teal); background: var(--teal-light); transform: translateX(3px); }
+</style>
+
+<script>
+function filterUsers(q) {
+  document.querySelectorAll('.user-row').forEach(row => {
+    row.style.display = row.dataset.name.includes(q.toLowerCase()) ? 'flex' : 'none';
+  });
+}
+</script>
+{% endblock %}

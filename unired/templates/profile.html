@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Профиль — {{ user.username }}{% endblock %}
+{% block content %}
+<div class="profile-wrap">
+
+  <!-- ШАПКА ПРОФИЛЯ -->
+  <div class="profile-header">
+    <div class="profile-header-bg"></div>
+    <div class="profile-header-content">
+      <div class="profile-avatar-big">{{ user.username[0].upper() }}</div>
+      <div class="profile-info">
+        <div class="profile-name">{{ user.username }}
+          {% if user.role == 'admin' %}<span class="role-badge role-admin">Admin</span>
+          {% elif user.role == 'moderator' %}<span class="role-badge role-mod">Mod</span>
+          {% else %}<span class="role-badge role-student">Студент</span>{% endif %}
+        </div>
+        <div class="profile-email">{{ user.email }}</div>
+        {% if user.faculty %}<div class="profile-faculty">🎓 {{ user.faculty }}</div>{% endif %}
+        {% if user.bio %}<div class="profile-bio">{{ user.bio }}</div>{% endif %}
+        <div class="profile-joined">📅 На сайте с {{ user.created_at[:10] }}</div>
+      </div>
+      <a href="/profile/edit" class="btn btn-outline" style="margin-left:auto;align-self:flex-start">✏️ Редактировать</a>
+    </div>
+  </div>
+
+  <!-- СТАТИСТИКА -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num">{{ posts|length }}</div>
+      <div class="stat-label">Постов</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ comments_count }}</div>
+      <div class="stat-label">Комментариев</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ total_votes }}</div>
+      <div class="stat-label">Голосов получено</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ votes_given }}</div>
+      <div class="stat-label">Голосов отдано</div>
+    </div>
+  </div>
+
+  <!-- ПОСТЫ ПОЛЬЗОВАТЕЛЯ -->
+  <div class="profile-section-title">📝 Мои посты</div>
+
+  {% if posts %}
+    {% for post in posts %}
+    <div class="post-card" style="margin-bottom:10px">
+      <div class="vote-col">
+        <span style="font-size:18px;color:var(--hint)">▲</span>
+        <span class="vote-count">{{ post.votes }}</span>
+      </div>
+      <div class="post-body-wrap">
+        <div class="post-meta">
+          <span class="tag-badge tag-{{ post.tag }}">
+            {% if post.tag=='news' %}Новости{% elif post.tag=='event' %}Ивент{% elif post.tag=='discuss' %}Обсуждение{% elif post.tag=='help' %}Вопрос{% elif post.tag=='admin' %}Объявление{% else %}{{ post.tag }}{% endif %}
+          </span>
+          <span class="post-time">{{ time_ago(post.created_at) }}</span>
+        </div>
+        <div class="post-title"><a href="/post/{{ post.id }}">{{ post.title }}</a></div>
+        <div class="post-excerpt">{{ post.body }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">Вы ещё не написали ни одного поста</div>
+      <a href="/post/new" class="btn btn-teal" style="margin-top:12px">Создать первый пост</a>
+    </div>
+  {% endif %}
+
+</div>
+
+<style>
+.profile-wrap {
+  max-width: 800px; margin: 28px auto; padding: 0 20px;
+}
+.profile-header {
+  position: relative;
+  background: var(--surface);
+  backdrop-filter: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-md);
+}
+.profile-header-bg {
+  height: 100px;
+  background: linear-gradient(135deg, var(--teal) 0%, var(--accent) 100%);
+  opacity: 0.85;
+}
+.profile-header-content {
+  display: flex; align-items: flex-end; gap: 20px;
+  padding: 0 28px 24px;
+  margin-top: -44px;
+  flex-wrap: wrap;
+}
+.profile-avatar-big {
+  width: 88px; height: 88px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--accent));
+  color: #fff; font-family: 'Rajdhani', sans-serif;
+  font-size: 38px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 4px solid white;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+.profile-info { flex: 1; min-width: 200px; padding-top: 8px; }
+.profile-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px; font-weight: 700;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.role-badge {
+  font-size: 11px; font-weight: 700; padding: 2px 10px;
+  border-radius: 20px; font-family: 'Nunito', sans-serif;
+}
+.role-admin { background: var(--accent-light); color: var(--accent); }
+.role-mod { background: var(--teal-light); color: var(--teal); }
+.role-student { background: var(--purple-light); color: var(--purple); }
+.profile-email { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.profile-faculty { font-size: 13px; color: var(--teal); font-weight: 600; margin-top: 4px; }
+.profile-bio { font-size: 14px; color: var(--text); margin-top: 6px; line-height: 1.5; }
+.profile-joined { font-size: 12px; color: var(--hint); margin-top: 6px; }
+
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-bottom: 24px;
+}
+@media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+.stat-card {
+  background: var(--surface); backdrop-filter: var(--glass);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px 14px; text-align: center; box-shadow: var(--shadow);
+  transition: all 0.18s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.stat-num {
+  font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700;
+  color: var(--teal); line-height: 1;
+}
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 600; }
+
+.profile-section-title {
+  font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700;
+  margin-bottom: 14px; letter-spacing: 0.03em;
+}
+.empty-state {
+  text-align: center; padding: 50px 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.empty-icon { font-size: 40px; margin-bottom: 10px; }
+.empty-text { font-size: 15px; color: var(--muted); }
+</style>
+{% endblock %}
