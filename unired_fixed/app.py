@@ -4,8 +4,8 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = 'unired-secret-2026'
-DB = 'database.db'
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-only-secret')
+DB = os.environ.get('DATABASE_PATH', '/tmp/database.db')
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'avi', 'pdf', 'doc', 'docx'}
